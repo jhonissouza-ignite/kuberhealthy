@@ -42,7 +42,7 @@ func GetOwnerRef(client *kubernetes.Clientset, namespace string) ([]metav1.Owner
 // getKuberhealthyPod fetches the podSpec
 func getKuberhealthyPod(client *kubernetes.Clientset, namespace, podName string) (*apiv1.Pod, error) {
 	podClient := client.CoreV1().Pods(namespace)
-	kHealthyPod, err := podClient.Get(podName, metav1.GetOptions{})
+	kHealthyPod, err := podClient.Get(nil, podName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func PodNameExists(client *kubernetes.Clientset, podName string, namespace strin
 	podClient := client.CoreV1().Pods(namespace)
 
 	// if the pod is "not found", then it does not exist
-	p, err := podClient.Get(podName, metav1.GetOptions{})
+	p, err := podClient.Get(nil, podName, metav1.GetOptions{})
 	if err != nil && (k8sErrors.IsNotFound(err) || strings.Contains(err.Error(), "not found")) {
 		log.Warnln("Pod", podName, "in namespace", namespace, "was not found"+":", err.Error)
 		return false, err
@@ -126,7 +126,7 @@ func PodKill(client *kubernetes.Clientset, podName string, namespace string, gra
 	podClient := client.CoreV1().Pods(namespace)
 
 	// Check for and return any errors, otherwise pod was killed successfully
-	err := podClient.Delete(podName, &metav1.DeleteOptions{GracePeriodSeconds: &gracePeriod})
+	err := podClient.Delete(nil, podName, metav1.DeleteOptions{GracePeriodSeconds: &gracePeriod})
 	if err != nil && (k8sErrors.IsNotFound(err) || strings.Contains(err.Error(), "not found")) {
 		log.Warnln("Pod", podName, "not found not found in namespace", namespace+":", err.Error)
 		return err
