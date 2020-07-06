@@ -262,7 +262,7 @@ func (ext *Checker) cleanup() {
 	// find all pods that are running still so we can evict them (not delete - for records)
 	checkLabelSelector := kuberhealthyCheckNameLabel + " = " + ext.CheckName
 	ext.log("eviction: looking for pods with the label", checkLabelSelector)
-	podList, err := podClient.List(metav1.ListOptions{
+	podList, err := podClient.List(nil, metav1.ListOptions{
 		LabelSelector: checkLabelSelector,
 	})
 
@@ -301,7 +301,7 @@ func (ext *Checker) evictPod(podName string, podNamespace string) error {
 			Namespace: podNamespace,
 		},
 	}
-	err := podClient.Evict(eviction)
+	err := podClient.Evict(nil, eviction)
 	if err != nil {
 		ext.log("error when trying to cleanup/evict checker pod", podName, "in namespace", podNamespace+":", err)
 		podExists, _ := util.PodNameExists(ext.KubeClient, podName, podNamespace)
@@ -462,7 +462,7 @@ func (ext *Checker) startPodWatcher(listOptions metav1.ListOptions, ctx context.
 		}
 
 		// start a new watch request
-		watcher, err := podClient.Watch(listOptions)
+		watcher, err := podClient.Watch(nil, listOptions)
 
 		// if we got our watcher, we stop trying to make one
 		if err == nil {
@@ -727,7 +727,7 @@ func (ext *Checker) deletePod(podName string) error {
 	podClient := ext.KubeClient.CoreV1().Pods(ext.Namespace)
 	gracePeriodSeconds := int64(1)
 	deletionPolicy := metav1.DeletePropagationForeground
-	err := podClient.Delete(podName, &metav1.DeleteOptions{
+	err := podClient.Delete(nil, podName, metav1.DeleteOptions{
 		GracePeriodSeconds: &gracePeriodSeconds,
 		PropagationPolicy:  &deletionPolicy,
 	})
@@ -871,7 +871,7 @@ func (ext *Checker) waitForAllPodsToClear() chan error {
 			}
 
 			// fetch the pod by name
-			p, err := podClient.Get(ext.podName(), metav1.GetOptions{})
+			p, err := podClient.Get(nil, ext.podName(), metav1.GetOptions{})
 
 			// if we got a "not found" message, then we are done.  This is the happy path.
 			if err != nil {
@@ -915,7 +915,7 @@ func (ext *Checker) waitForPodExit() chan error {
 			// down sometimes, causing false alerts that checker pods failed to stop.
 
 			// start a new watch request
-			pods, err := podClient.List(metav1.ListOptions{
+			pods, err := podClient.List(nil, metav1.ListOptions{
 				LabelSelector: kuberhealthyRunIDLabel + "=" + ext.currentCheckUUID,
 			})
 
@@ -982,7 +982,7 @@ func (ext *Checker) waitForPodStart() chan error {
 
 			ext.log("starting pod running watcher")
 
-			pods, err := podClient.List(metav1.ListOptions{
+			pods, err := podClient.List(nil, metav1.ListOptions{
 				LabelSelector: kuberhealthyRunIDLabel + "=" + ext.currentCheckUUID,
 			})
 			if err != nil {
@@ -994,7 +994,7 @@ func (ext *Checker) waitForPodStart() chan error {
 				return
 			}
 			// start watching
-			watcher, err := podClient.Watch(metav1.ListOptions{
+			watcher, err := podClient.Watch(nil, metav1.ListOptions{
 				LabelSelector: kuberhealthyRunIDLabel + "=" + ext.currentCheckUUID,
 			})
 			if err != nil {
@@ -1104,7 +1104,7 @@ func (ext *Checker) createPod() (*apiv1.Pod, error) {
 	// Set ownerReference on all checker pods
 	p.OwnerReferences = ownerRef
 
-	return ext.KubeClient.CoreV1().Pods(ext.Namespace).Create(p)
+	return ext.KubeClient.CoreV1().Pods(ext.Namespace).Create(nil, p, metav1.CreateOptions{})
 }
 
 // configureUserPodSpec configures a user-specified pod spec with
